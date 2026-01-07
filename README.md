@@ -20,8 +20,8 @@ time-ordered history, and offline use without external databases.
 ```bash
 git clone https://github.com/yourusername/memvid-agent-mcp.git
 cd memvid-agent-mcp
-uv sync --all-extras
-uv run python memvid_mcp_server.py
+python3 -m pip install -e ".[dev]" --user
+python3 memvid_mcp_server.py
 ```
 
 ## Installation
@@ -30,13 +30,11 @@ uv run python memvid_mcp_server.py
 - Python 3.10+
 - Git
 
-### Setup (pip)
+### Setup (pip, global user install)
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -e ".[dev]"
-python memvid_mcp_server.py
+python3 -m pip install -e ".[dev]" --user
+python3 memvid_mcp_server.py
 ```
 
 ## Configuration (TUI)
@@ -45,17 +43,11 @@ Add the server to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.memvid]
-command = "uv"
+command = "python3"
 args = [
-  "--directory",
-  "/path/to/memvid-agent-mcp",
-  "run",
-  "python",
-  "-u",
-  "memvid_mcp_server.py"
+  "/path/to/memvid-agent-mcp/memvid_mcp_server.py"
 ]
 env = {
-  PYTHONPATH = "/path/to/memvid-agent-mcp",
   PYTHONUNBUFFERED = "1",
   MEMVID_LOG_LEVEL = "INFO"
 }
@@ -81,7 +73,8 @@ text = """
 """
 ```
 
-If you prefer plain Python, replace `uv ... run python` with `python -u` and use the full file path.
+If you prefer a virtual environment, replace the install step with a venv workflow and keep the same
+`python3 /path/to/memvid_mcp_server.py` config entry.
 
 ## Usage
 
