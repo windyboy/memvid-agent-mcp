@@ -1,0 +1,10 @@
+Memvid MCP memory rules
+
+- Use the memvid MCP server for durable user preferences, decisions, and project context.
+- At the start of each new task, query memory for relevant context before acting.
+  - Use memvid_search (or memvid_search_by_tag when tags are available).
+- After each task, write back any new durable preferences/decisions/constraints.
+  - Use memvid_add_text or memvid_add_file, then memvid_commit.
+- Do not store secrets, tokens, credentials, or transient errors.
+- Use consistent tags like project, decision, preference, constraint.
+- Default memory file path: memory.mv2 (override only if user specifies).
