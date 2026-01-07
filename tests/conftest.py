@@ -30,12 +30,18 @@ def test_config(temp_memory_dir: Path) -> ServerConfig:
 
 @pytest.fixture
 def server_tools(test_config: ServerConfig) -> dict[str, Callable[..., dict[str, Any]]]:
-    """Create server and return tool functions directly."""
+    """Create server and return tool functions directly.
+
+    Note: This fixture accesses FastMCP's private _tool_manager and _tools attributes
+    to extract tool functions for testing. This is intentional for unit testing purposes,
+    allowing direct function invocation without async MCP protocol overhead.
+    If FastMCP's internal API changes, update this fixture accordingly.
+    """
     # Create the server which registers all tools
     server = create_server(test_config)
 
-    # Extract the registered tool functions
-    # FastMCP stores tools internally, we need to access them
+    # Extract the registered tool functions from FastMCP internals
+    # This allows synchronous testing without MCP protocol complexity
     tools = {}
     for tool in server._tool_manager._tools.values():
         tools[tool.name] = tool.fn

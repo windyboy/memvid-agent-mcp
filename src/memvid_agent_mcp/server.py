@@ -168,6 +168,9 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
             path: Path to the .mv2 memory file.
             text: Text content to add to the memory.
             metadata: Optional dictionary of metadata to attach to the frame.
+                      NOTE: Metadata is currently not persisted by the memvid-rs API
+                      and is only logged for debugging purposes. Future versions
+                      may support metadata persistence.
 
         Returns:
             Dictionary containing the frame index and status.
@@ -246,10 +249,15 @@ def create_server(config: ServerConfig | None = None) -> FastMCP:
             # Format results - find returns list of dicts with 'id', 'text', 'score'
             formatted_results = []
             for result in results:
+                # Validate required fields are present
+                if not isinstance(result, dict):
+                    logger.warning(f"Unexpected result format: {result}")
+                    continue
+
                 formatted_results.append(
                     {
-                        "frame_index": result.get("id", 0),
-                        "text": result.get("text", ""),
+                        "frame_index": result.get("id", result.get("index", 0)),
+                        "text": result.get("text", result.get("content", "")),
                         "score": result.get("score", 0.0),
                     }
                 )
