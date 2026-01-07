@@ -1,9 +1,6 @@
 """Tests for server configuration."""
 
-import os
 from pathlib import Path
-
-import pytest
 
 from memvid_agent_mcp.config import ServerConfig
 
@@ -34,7 +31,12 @@ def test_config_from_env(monkeypatch, tmp_path):
 def test_config_from_env_defaults(monkeypatch):
     """Test configuration with default values when env vars not set."""
     # Clear relevant env vars
-    for key in ["MEMVID_LOG_LEVEL", "MEMVID_MEMORY_DIR", "MEMVID_MAX_SEARCH_RESULTS", "MEMVID_EMBEDDING_MODEL"]:
+    for key in [
+        "MEMVID_LOG_LEVEL",
+        "MEMVID_MEMORY_DIR",
+        "MEMVID_MAX_SEARCH_RESULTS",
+        "MEMVID_EMBEDDING_MODEL",
+    ]:
         monkeypatch.delenv(key, raising=False)
 
     config = ServerConfig.from_env()
@@ -49,5 +51,6 @@ def test_setup_logging(test_config):
     test_config.setup_logging()
     # If this doesn't raise, logging is configured correctly
     import logging
+
     logger = logging.getLogger("test")
     logger.info("Test message")

@@ -1,8 +1,9 @@
 """Shared test fixtures and utilities."""
 
 import tempfile
+from collections.abc import Callable, Generator
 from pathlib import Path
-from typing import Generator
+from typing import Any
 
 import pytest
 
@@ -28,9 +29,18 @@ def test_config(temp_memory_dir: Path) -> ServerConfig:
 
 
 @pytest.fixture
-def mcp_server(test_config: ServerConfig):
-    """Create a test MCP server instance."""
-    return create_server(test_config)
+def server_tools(test_config: ServerConfig) -> dict[str, Callable[..., dict[str, Any]]]:
+    """Create server and return tool functions directly."""
+    # Create the server which registers all tools
+    server = create_server(test_config)
+
+    # Extract the registered tool functions
+    # FastMCP stores tools internally, we need to access them
+    tools = {}
+    for tool in server._tool_manager._tools.values():
+        tools[tool.name] = tool.fn
+
+    return tools
 
 
 @pytest.fixture

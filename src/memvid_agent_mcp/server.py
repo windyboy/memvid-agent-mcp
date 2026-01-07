@@ -6,7 +6,7 @@ Provides tools for creating, managing, and searching .mv2 memory files.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 from memvid_rs import MemvidMemory
@@ -34,7 +34,7 @@ class AddFrameInput(BaseModel):
     text: str = Field(
         description="Text content to add as a new frame",
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         default=None,
         description="Optional metadata to attach to the frame",
     )
@@ -49,7 +49,7 @@ class SearchInput(BaseModel):
     query: str = Field(
         description="Search query text",
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=None,
         description="Maximum number of results to return (uses server default if not specified)",
     )
@@ -61,11 +61,11 @@ class ListFramesInput(BaseModel):
     path: str = Field(
         description="Path to the .mv2 memory file",
     )
-    offset: Optional[int] = Field(
+    offset: int | None = Field(
         default=0,
         description="Starting index for pagination",
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=10,
         description="Number of frames to return",
     )
@@ -91,7 +91,7 @@ class CommitInput(BaseModel):
     )
 
 
-def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
+def create_server(config: ServerConfig | None = None) -> FastMCP:
     """
     Create and configure the Memvid MCP server.
 
@@ -110,10 +110,10 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
     # Ensure default memory directory exists
     config.default_memory_dir.mkdir(parents=True, exist_ok=True)
 
-    mcp = FastMCP("memvid-agent", dependencies=[config])
+    mcp = FastMCP("memvid-agent")
 
     @mcp.tool()
-    def create_memory(path: str) -> Dict[str, Any]:
+    def create_memory(path: str) -> dict[str, Any]:
         """
         Create a new Memvid .mv2 memory file.
 
@@ -160,7 +160,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             }
 
     @mcp.tool()
-    def add_frame(path: str, text: str, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def add_frame(path: str, text: str, metadata: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Add a new frame (text entry) to an existing Memvid memory.
 
@@ -185,11 +185,11 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
                 raise FileNotFoundError(f"Memory file not found: {memory_path}")
 
             logger.info(f"Adding frame to memory: {memory_path}")
-            
+
             # Open existing memory and append
             memory = MemvidMemory.open(str(memory_path))
             frame_idx = memory.append(text)
-            
+
             # Note: memvid-rs may need API updates to support metadata
             # For now, we'll just log it
             if metadata:
@@ -198,7 +198,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             logger.info(f"Successfully added frame {frame_idx} to {memory_path}")
             return {
                 "status": "success",
-                "message": f"Added frame to memory",
+                "message": "Added frame to memory",
                 "frame_index": frame_idx,
                 "path": str(memory_path),
             }
@@ -211,7 +211,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             }
 
     @mcp.tool()
-    def search_memory(path: str, query: str, limit: Optional[int] = None) -> Dict[str, Any]:
+    def search_memory(path: str, query: str, limit: int | None = None) -> dict[str, Any]:
         """
         Search for frames in a Memvid memory using semantic and text search.
 
@@ -239,18 +239,20 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
                 limit = config.max_search_results
 
             logger.info(f"Searching memory {memory_path} for: {query}")
-            
-            memory = MemvidMemory.open(str(memory_path))
-            results = memory.search(query, limit=limit)
 
-            # Format results
+            memory = MemvidMemory.open(str(memory_path))
+            results = memory.find(query, k=limit)
+
+            # Format results - find returns list of dicts with 'id', 'text', 'score'
             formatted_results = []
             for result in results:
-                formatted_results.append({
-                    "frame_index": result.get("index", 0),
-                    "text": result.get("text", ""),
-                    "score": result.get("score", 0.0),
-                })
+                formatted_results.append(
+                    {
+                        "frame_index": result.get("id", 0),
+                        "text": result.get("text", ""),
+                        "score": result.get("score", 0.0),
+                    }
+                )
 
             logger.info(f"Found {len(formatted_results)} results")
             return {
@@ -268,7 +270,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             }
 
     @mcp.tool()
-    def list_frames(path: str, offset: int = 0, limit: int = 10) -> Dict[str, Any]:
+    def list_frames(path: str, offset: int = 0, limit: int = 10) -> dict[str, Any]:
         """
         List frames from a Memvid memory file with pagination.
 
@@ -293,21 +295,23 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
                 raise FileNotFoundError(f"Memory file not found: {memory_path}")
 
             logger.info(f"Listing frames from {memory_path} (offset={offset}, limit={limit})")
-            
+
             memory = MemvidMemory.open(str(memory_path))
-            
+
             # Get total count
-            total_count = memory.len()
-            
+            total_count = memory.frame_count()
+
             # Get frames in range
             frames = []
             for i in range(offset, min(offset + limit, total_count)):
                 try:
                     frame_text = memory.get_frame(i)
-                    frames.append({
-                        "index": i,
-                        "text": frame_text,
-                    })
+                    frames.append(
+                        {
+                            "index": i,
+                            "text": frame_text,
+                        }
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to get frame {i}: {e}")
                     continue
@@ -330,7 +334,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             }
 
     @mcp.tool()
-    def export_memory(path: str, output_format: str = "json") -> Dict[str, Any]:
+    def export_memory(path: str, output_format: str = "json") -> dict[str, Any]:
         """
         Export all frames from a Memvid memory file.
 
@@ -354,19 +358,21 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
                 raise FileNotFoundError(f"Memory file not found: {memory_path}")
 
             logger.info(f"Exporting memory from {memory_path} as {output_format}")
-            
+
             memory = MemvidMemory.open(str(memory_path))
-            total_count = memory.len()
-            
+            total_count = memory.frame_count()
+
             # Collect all frames
             frames = []
             for i in range(total_count):
                 try:
                     frame_text = memory.get_frame(i)
-                    frames.append({
-                        "index": i,
-                        "text": frame_text,
-                    })
+                    frames.append(
+                        {
+                            "index": i,
+                            "text": frame_text,
+                        }
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to get frame {i}: {e}")
                     continue
@@ -375,14 +381,12 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             if output_format.lower() == "json":
                 export_data = frames
             elif output_format.lower() == "text":
-                export_data = "\n\n".join(
-                    f"[Frame {f['index']}]\n{f['text']}" for f in frames
-                )
+                export_data = "\n\n".join(f"[Frame {f['index']}]\n{f['text']}" for f in frames)
             elif output_format.lower() == "csv":
                 csv_lines = ["index,text"]
                 for f in frames:
                     # Simple CSV escaping
-                    text = f['text'].replace('"', '""')
+                    text = f["text"].replace('"', '""')
                     csv_lines.append(f"{f['index']},\"{text}\"")
                 export_data = "\n".join(csv_lines)
             else:
@@ -404,7 +408,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
             }
 
     @mcp.tool()
-    def commit_memory(path: str) -> Dict[str, Any]:
+    def commit_memory(path: str) -> dict[str, Any]:
         """
         Commit pending changes to a Memvid memory file.
 
@@ -429,7 +433,7 @@ def create_server(config: Optional[ServerConfig] = None) -> FastMCP:
                 raise FileNotFoundError(f"Memory file not found: {memory_path}")
 
             logger.info(f"Committing changes to {memory_path}")
-            
+
             memory = MemvidMemory.open(str(memory_path))
             memory.commit()
 

@@ -97,12 +97,12 @@ Examples:
     # Create and run server
     try:
         mcp = create_server(config)
-        
-        print(f"Starting Memvid MCP server...", file=sys.stderr)
+
+        print("Starting Memvid MCP server...", file=sys.stderr)
         print(f"Transport: {args.transport}", file=sys.stderr)
         print(f"Memory directory: {config.default_memory_dir}", file=sys.stderr)
         print(f"Log level: {config.log_level}", file=sys.stderr)
-        
+
         if args.transport == "stdio":
             mcp.run(transport="stdio")
         elif args.transport in ["streamable-http", "sse"]:

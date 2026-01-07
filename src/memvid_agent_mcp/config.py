@@ -7,7 +7,6 @@ Handles environment variables and server configuration.
 import logging
 import os
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,7 +26,7 @@ class ServerConfig(BaseModel):
         default=10,
         description="Maximum number of search results to return",
     )
-    embedding_model: Optional[str] = Field(
+    embedding_model: str | None = Field(
         default=None,
         description="Optional embedding model override",
     )
@@ -36,10 +35,10 @@ class ServerConfig(BaseModel):
     def from_env(cls) -> "ServerConfig":
         """Create configuration from environment variables."""
         log_level = os.getenv("MEMVID_LOG_LEVEL", "INFO").upper()
-        
+
         memory_dir_str = os.getenv("MEMVID_MEMORY_DIR")
         memory_dir = Path(memory_dir_str) if memory_dir_str else Path.home() / ".memvid"
-        
+
         max_results = int(os.getenv("MEMVID_MAX_SEARCH_RESULTS", "10"))
         embedding_model = os.getenv("MEMVID_EMBEDDING_MODEL")
 
