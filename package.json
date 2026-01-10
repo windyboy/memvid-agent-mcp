@@ -1,0 +1,46 @@
+{
+  "name": "memvid-agent-mcp",
+  "version": "0.2.0",
+  "description": "A TypeScript/Node.js Model Context Protocol (MCP) server that exposes Memvid memory management capabilities to AI clients",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "memvid-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src",
+    "type-check": "tsc --noEmit",
+    "test": "vitest"
+  },
+  "keywords": [
+    "mcp",
+    "memvid",
+    "ai",
+    "memory",
+    "claude",
+    "agent"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@memvid/sdk": "^2.0.146",
+    "@modelcontextprotocol/sdk": "^1.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.17.0",
+    "@typescript-eslint/parser": "^6.17.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
