@@ -1,281 +1,197 @@
-# Memvid MCP Server (TypeScript)
+# Memvid MCP Server
 
-A high-performance **Model Context Protocol (MCP) server** written in TypeScript/Node.js that exposes [Memvid](https://github.com/memvid/memvid) memory management capabilities to AI clients like Claude Desktop and Codex CLI.
+A TypeScript/Node.js implementation of the Model Context Protocol (MCP) server that integrates [Memvid](https://github.com/memvid/memvid) with AI agents like Claude Desktop and Codex CLI.
 
-Memvid is a portable, serverless memory layer for AI agents that packages data, embeddings, search structure, and metadata into a single `.mv2` file. This MCP server bridges Memvid with your AI workflows, enabling persistent memory management directly from Claude.
+This server allows you to use Memvid's memory management directly from your AI workflows. Memvid stores agent memory in a single `.mv2` file—no database needed, fully offline-first, with built-in semantic search and tagging.
 
-## Features
+## What You Can Do
 
-### Core Memory Operations
-- **Create Memory Files**: Initialize new `.mv2` memory files
-- **Add Content**: Add text and file content to memory with metadata
-- **Semantic Search**: Query memory using natural language
-- **Tag-based Search**: Organize and find content by tags
-- **Commit Changes**: Persist memory updates
+- **Create memory files** to store agent context and decisions
+- **Add content** (text or files) with optional tags and metadata
+- **Search semantically** using natural language queries
+- **Organize by tags** for structured memory management
+- **Export results** in multiple formats (text, JSON, markdown)
+- **Persist changes** with a simple commit operation
 
-### Memory Management
-- **File Information**: View memory file statistics
-- **Content Listing**: Browse memory contents with timeline
-- **Export Results**: Export search results in multiple formats (text, JSON, markdown)
-
-### Performance & Type Safety
-- **TypeScript**: Full type safety and IDE support
-- **Rust Backend**: High-performance Memvid core via N-API
-- **No Database**: Single-file memory, offline-first
-- **Framework Integration**: Direct support for LangChain, LlamaIndex, etc.
-
-## Installation
+## Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ or higher
-- **npm**, **yarn**, or **pnpm** package manager
-- **Git**
 
-### Setup
+- Node.js 18 or higher
+- npm, yarn, or pnpm
 
-1. **Clone or download this repository**
-   ```bash
-   git clone https://github.com/windyboy/memvid-agent-mcp.git
-   cd memvid-agent-mcp
-   ```
+### Installation
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   pnpm install
-   # or
-   yarn install
-   ```
+```bash
+git clone https://github.com/windyboy/memvid-agent-mcp.git
+cd memvid-agent-mcp
+npm install
+npm run build
+```
 
-3. **Build the project**
-   ```bash
-   npm run build
-   ```
+### Configure Claude Desktop
 
-## Configuration
+Find your Claude Desktop config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
-### Claude Desktop Setup
+Add this to the `mcpServers` section:
 
-1. **Locate Claude Desktop configuration**
-   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
+```json
+{
+  "mcpServers": {
+    "memvid": {
+      "command": "node",
+      "args": ["/path/to/memvid-agent-mcp/dist/index.js"],
+      "env": {
+        "MEMVID_LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
+```
 
-2. **Add Memvid MCP Server to configuration**
-   ```json
-   {
-     "mcpServers": {
-       "memvid": {
-         "command": "node",
-         "args": [
-           "/path/to/memvid-agent-mcp/dist/index.js"
-         ],
-         "env": {
-           "MEMVID_LOG_LEVEL": "INFO"
-         }
-       }
-     }
-   }
-   ```
+Restart Claude Desktop, and you're done!
 
-3. **Restart Claude Desktop** to load the server
-
-### Codex CLI Setup
+### For Codex CLI
 
 Add to `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.memvid]
 command = "node"
-args = [
-  "/path/to/memvid-agent-mcp/dist/index.js"
-]
-env = {
-  MEMVID_LOG_LEVEL = "INFO"
-}
+args = ["/path/to/memvid-agent-mcp/dist/index.js"]
+env = { MEMVID_LOG_LEVEL = "INFO" }
 ```
 
-## Usage
+## Available Tools
 
-### Basic Workflow
+### Memory Management
+- `memvid_create` — Create a new memory file
+- `memvid_add_text` — Add text content with optional title and tags
+- `memvid_add_file` — Add file content to memory
+- `memvid_commit` — Save changes to disk
 
-1. **Create a memory file**
-   ```
-   Tool: memvid_create
-   Parameters: file_path = "~/.codex/memory/memvid.mv2"
-   ```
+### Search & Query
+- `memvid_search` — Semantic search across memory
+- `memvid_search_by_tag` — Find content by tags
+- `memvid_list_contents` — Browse all stored content
 
-2. **Add content to memory**
-   ```
-   Tool: memvid_add_text
-   Parameters:
-   - file_path = "~/.codex/memory/memvid.mv2"
-   - content = "Your text content here"
-   - title = "Content Title"
-   - tags = {"project": "alpha", "type": "decision"}
-   ```
+### Utilities
+- `memvid_info` — Get memory file statistics
+- `memvid_get_status` — Check server health
+- `memvid_export_search_results` — Export search results
 
-3. **Search memory**
-   ```
-   Tool: memvid_search
-   Parameters:
-   - file_path = "~/.codex/memory/memvid.mv2"
-   - query = "What did we decide about the database?"
-   - top_k = 5
-   ```
+## Example Usage
 
-4. **Commit changes**
-   ```
-   Tool: memvid_commit
-   Parameters: file_path = "~/.codex/memory/memvid.mv2"
-   ```
+In Claude or your AI agent:
 
-### Available Tools
+```
+Create a memory file at ~/.codex/memory/memvid.mv2
+Add this text to it:
+  Title: "Database Architecture Decision"
+  Content: "We decided to use PostgreSQL for the main database..."
+  Tags: {"project": "backend", "type": "decision"}
 
-#### Memory Management
-- `memvid_create` - Create a new memory file
-- `memvid_add_text` - Add text content to memory
-- `memvid_add_file` - Add file content to memory
-- `memvid_commit` - Save changes to memory file
-
-#### Search & Query
-- `memvid_search` - Semantic search on memory
-- `memvid_search_by_tag` - Search by tags
-- `memvid_list_contents` - List memory contents
-
-#### Information
-- `memvid_info` - Get memory file information
-- `memvid_get_status` - Get server status
-- `memvid_export_search_results` - Export results in different formats
+Later, search for: "What database did we choose?"
+```
 
 ## Development
 
-### Running in Development Mode
+Run in development mode (TypeScript directly, no build needed):
 
 ```bash
 npm run dev
 ```
 
-This uses `tsx` to run TypeScript directly without compilation.
-
-### Building for Production
+Build for production:
 
 ```bash
 npm run build
 ```
 
-Output is in the `dist/` directory.
-
-### Code Quality
+Code quality checks:
 
 ```bash
-# Type checking
-npm run type-check
-
-# Linting
-npm run lint
-
-# Formatting
-npm run format
-
-# Testing
-npm run test
+npm run type-check  # TypeScript type checking
+npm run lint        # ESLint
+npm run format      # Prettier
+npm run test        # Vitest
 ```
 
-## Architecture
+## How It Works
 
 ```
-Claude Desktop / Codex CLI
-        ↓
-   JSON-RPC 2.0 (STDIO)
-        ↓
-Memvid MCP Server (TypeScript/Node.js)
-        ↓
-   @modelcontextprotocol/sdk
-        ↓
-   @memvid/sdk (Node.js)
-        ↓
-   Memvid Core (Rust N-API)
-        ↓
-   .mv2 Memory Files
+Your AI Agent (Claude, Codex, etc.)
+            ↓
+    JSON-RPC 2.0 over STDIO
+            ↓
+  Memvid MCP Server (Node.js)
+            ↓
+    @memvid/sdk (Node.js binding)
+            ↓
+  Memvid Core (Rust, high-performance)
+            ↓
+    .mv2 Memory Files (local disk)
 ```
 
-## Environment Variables
+## Configuration
 
-| Variable | Description | Default |
-|----------|-------------|----------|
-| `MEMVID_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | WARNING |
+Set the log level via environment variable:
 
-## Performance Considerations
+```bash
+export MEMVID_LOG_LEVEL=DEBUG  # DEBUG, INFO, WARNING, ERROR
+```
 
-- **Memory file size**: Single `.mv2` files can contain millions of documents
-- **Search speed**: Semantic search is typically sub-100ms for local files
-- **Indexing**: First search on new content may take longer as indices are built
-- **Concurrent access**: Not recommended for concurrent writes to same file
+## Tips & Best Practices
 
-## Security
-
-- **File paths**: Validated to prevent directory traversal
-- **Input validation**: All parameters are validated before use
-- **Error messages**: Sanitized to avoid information leakage
-- **Permissions**: Respects system file permissions
+- **Use consistent tags** across your memory for easier organization
+- **Commit regularly** to ensure changes are saved
+- **Keep memory files local** for best performance
+- **Search semantically** — natural language queries work best
+- **One file per agent** is a good starting point
 
 ## Troubleshooting
 
-### "@memvid/sdk is not installed"
+**"@memvid/sdk is not installed"**
 ```bash
 npm install @memvid/sdk
 ```
 
-### Memory file not found
-- Ensure the file path is correct and absolute
+**Memory file not found**
+- Make sure the path is absolute
 - Check file permissions
-- Verify the file exists or use `memvid_create` first
+- Create the file first with `memvid_create`
 
-### Search returns no results
+**Search returns no results**
 - Verify content was added with `memvid_add_text`
-- Ensure `memvid_commit` was called
+- Run `memvid_commit` after adding content
 - Try simpler search queries
-- Check that the memory file is valid
+- Check the memory file is valid
 
-### Server won't start
-- Check Node.js version (18+)
-- Verify all dependencies are installed (`npm install`)
-- Review Claude Desktop logs
-- Ensure no other process is using the same port
-
-## Comparison: TypeScript vs Python
-
-| Feature | TypeScript | Python |
-|---------|-----------|--------|
-| Performance | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
-| Type Safety | ⭐⭐⭐⭐⭐ | ⭐⭐ |
-| Framework Integration | Built-in | Manual |
-| Startup Time | Fast | Slower |
-| Bundle Size | Smaller | Larger |
-| Development | Excellent | Good |
-
-## Roadmap
-
-- [ ] Advanced timeline and history features
-- [ ] Batch operations (bulk add/delete)
-- [ ] HTTP/WebSocket transport support
-- [ ] Multi-file memory management
-- [ ] Memory merging and splitting
-- [ ] Advanced query syntax
-- [ ] Integration with LLM analysis
+**Server won't start**
+- Ensure Node.js 18+ is installed
+- Run `npm install` to get all dependencies
+- Check Claude Desktop logs for errors
 
 ## Contributing
 
-Contributions are welcome! Please:
+Found a bug or have an idea? Contributions welcome!
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Make your changes
+4. Commit (`git commit -m 'Add your feature'`)
+5. Push (`git push origin feature/your-feature`)
+6. Open a Pull Request
 
 ## License
 
 MIT License - see LICENSE file for details.
+
+## Related
+
+- [Memvid](https://github.com/memvid/memvid) — The core memory technology
+- [Model Context Protocol](https://modelcontextprotocol.io/) — MCP specification
+- [Claude Desktop](https://claude.ai/download) — AI client with MCP support
