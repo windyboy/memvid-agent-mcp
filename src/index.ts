@@ -490,18 +490,18 @@ const tools: Tool[] = [
   {
     name: "memvid_create",
     description:
-      "Create a new Memvid memory file. This file will store all memory data, embeddings, and indices in a single portable file.",
+      "Create a new Memvid memory file (.mv2 format). This file stores all memory data, embeddings, and indices in a single portable file. Use this to initialize a new memory storage location. Supports tilde (~) expansion for home directory paths.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
           description:
-            "Path where the memory file will be created (e.g., 'memory.mv2')",
+            "Path where the memory file will be created. Supports absolute paths, relative paths, and tilde (~) expansion for home directory (e.g., 'memory.mv2', '~/.codex/memory/memvid.mv2'). The parent directory will be created if it doesn't exist.",
         },
         description: {
           type: "string",
-          description: "Optional description of the memory's purpose",
+          description: "Optional description of the memory's purpose. This can help document the intended use case of the memory file.",
         },
       },
       required: ["file_path"],
@@ -510,29 +510,29 @@ const tools: Tool[] = [
   {
     name: "memvid_add_text",
     description:
-      "Add text content to memory. The content is indexed for semantic search and can be tagged for organization.",
+      "Add text content to memory with optional metadata. The content is automatically indexed for semantic search and can be organized using tags. Use this for storing decisions, preferences, constraints, and other persistent information. Tags are converted from key-value pairs to 'key:value' format internally.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion. The file will be created if it doesn't exist.",
         },
         content: {
           type: "string",
-          description: "Text content to add",
+          description: "Text content to add to memory. This will be indexed for semantic search, so use clear, descriptive text for better search results.",
         },
         title: {
           type: "string",
-          description: "Optional title for the content",
+          description: "Optional title for the content. Helps identify entries when browsing or searching. If omitted, entries may be labeled as 'Untitled'.",
         },
         uri: {
           type: "string",
-          description: "Optional URI identifier (e.g., 'mv2://documents/note-001')",
+          description: "Optional URI identifier for the content (e.g., 'mv2://documents/note-001'). Useful for creating structured references between entries.",
         },
         tags: {
           type: "object",
-          description: "Optional dictionary of tags for categorization",
+          description: "Optional dictionary of tags for categorization (e.g., {'type': 'decision', 'project': 'backend'}). Tags are converted to 'key:value' format internally. Recommended keys: type, category, project, status.",
           additionalProperties: { type: "string" },
         },
       },
@@ -542,25 +542,25 @@ const tools: Tool[] = [
   {
     name: "memvid_add_file",
     description:
-      "Add file content to memory. Reads a file from disk and adds its content to the memory.",
+      "Read a file from disk and add its content to memory. The file content is indexed for semantic search. Use this to import documents, configuration files, or other text-based files into memory. If title is not provided, the filename will be used as the title.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion. The file will be created if it doesn't exist.",
         },
         source_file: {
           type: "string",
-          description: "Path to the source file to add",
+          description: "Path to the source file to add. Must be an absolute or relative path to an existing file. The file will be read and its content added to memory.",
         },
         title: {
           type: "string",
-          description: "Optional title for the content",
+          description: "Optional title for the content. If omitted, the basename of the source file will be used as the title.",
         },
         tags: {
           type: "object",
-          description: "Optional dictionary of tags",
+          description: "Optional dictionary of tags for categorization (e.g., {'type': 'file', 'category': 'config'}). Tags are converted to 'key:value' format internally.",
           additionalProperties: { type: "string" },
         },
       },
@@ -570,13 +570,13 @@ const tools: Tool[] = [
   {
     name: "memvid_commit",
     description:
-      "Commit changes to memory file. Saves all pending changes to ensure they are persisted.",
+      "Commit and persist all pending changes to the memory file. Ensures that all previously added content is safely written to disk. Some SDK versions may auto-persist changes, but calling this explicitly is recommended after batch operations or when data integrity is critical.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion.",
         },
       },
       required: ["file_path"],
@@ -585,25 +585,25 @@ const tools: Tool[] = [
   {
     name: "memvid_search",
     description:
-      "Search memory with semantic query. Performs semantic search to find relevant content.",
+      "Perform semantic search across memory content using natural language queries. Returns the most relevant results based on semantic similarity, ordered by relevance score. Use natural language questions or descriptive phrases for best results (e.g., 'What database did we choose?' or 'code style preferences').",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion.",
         },
         query: {
           type: "string",
-          description: "Search query (natural language)",
+          description: "Search query in natural language. Use descriptive questions or phrases rather than keywords for better semantic matching (e.g., 'What database did we choose?' instead of 'database').",
         },
         top_k: {
           type: "number",
-          description: "Number of top results to return (default: 5)",
+          description: "Number of top results to return (default: 5). Typically 5-10 results are sufficient for most use cases. Higher values may reduce precision.",
         },
         snippet_chars: {
           type: "number",
-          description: "Maximum characters to return in snippets (default: 200)",
+          description: "Maximum characters to return in result snippets (default: 200). Longer snippets provide more context but increase response size.",
         },
       },
       required: ["file_path", "query"],
@@ -612,21 +612,21 @@ const tools: Tool[] = [
   {
     name: "memvid_search_by_tag",
     description:
-      "Search memory by tags. Finds content that has been tagged with specific key-value pairs.",
+      "Search memory by tag key-value pairs. Returns all entries that match the specified tag criteria. This is typically faster than semantic search when you know the exact tags. If tag_value is provided, matches exact 'key:value' pairs; if omitted, matches any entry with the tag key (regardless of value).",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion.",
         },
         tag_key: {
           type: "string",
-          description: "Tag key to search for",
+          description: "Tag key to search for (e.g., 'type', 'project', 'category'). If tag_value is not provided, matches any entry with this tag key.",
         },
         tag_value: {
           type: "string",
-          description: "Optional tag value to match",
+          description: "Optional tag value to match. If provided, only entries with exact 'key:value' tag match. If omitted, returns all entries with the tag key (any value).",
         },
       },
       required: ["file_path", "tag_key"],
@@ -635,13 +635,13 @@ const tools: Tool[] = [
   {
     name: "memvid_info",
     description:
-      "Get information about memory file. Returns metadata including size, creation time, and modification time.",
+      "Get metadata and statistics about a memory file. Returns file size (in MB), creation time, and last modification time. Useful for monitoring memory file growth and understanding file status.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion. The file must exist.",
         },
       },
       required: ["file_path"],
@@ -649,17 +649,18 @@ const tools: Tool[] = [
   },
   {
     name: "memvid_list_contents",
-    description: "List contents of memory file. Lists all or recent entries.",
+    description:
+      "List entries in the memory file in chronological order (timeline). Returns entries with their titles, timestamps, and previews. Useful for browsing all stored content or reviewing recent additions. Results are ordered by creation time.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion.",
         },
         limit: {
           type: "number",
-          description: "Maximum number of entries to return (default: 20)",
+          description: "Maximum number of entries to return (default: 20). Use higher values to see more entries, but note that very large limits may impact performance.",
         },
       },
       required: ["file_path"],
@@ -668,7 +669,7 @@ const tools: Tool[] = [
   {
     name: "memvid_get_status",
     description:
-      "Get Memvid MCP server status. Returns information about the server including version and available features.",
+      "Get the status and version information of the Memvid MCP server. Returns server version, Memvid SDK version, available features, and server health status. Useful for debugging and verifying server configuration.",
     inputSchema: {
       type: "object",
       properties: {},
@@ -677,25 +678,25 @@ const tools: Tool[] = [
   {
     name: "memvid_export_search_results",
     description:
-      "Export search results in specified format (text, json, or markdown).",
+      "Perform a semantic search and export the results in a specified format. Combines memvid_search with format conversion. Useful for generating reports, documentation, or structured data from search queries. Supports text (human-readable), JSON (structured data), and Markdown (formatted documentation) formats.",
     inputSchema: {
       type: "object",
       properties: {
         file_path: {
           type: "string",
-          description: "Path to the memory file",
+          description: "Path to the memory file. Supports tilde (~) expansion.",
         },
         query: {
           type: "string",
-          description: "Search query",
+          description: "Search query in natural language (same as memvid_search).",
         },
         format: {
           type: "string",
-          description: "Output format ('text', 'json', or 'markdown')",
+          description: "Output format: 'text' (human-readable, default), 'json' (structured JSON), or 'markdown' (formatted Markdown).",
         },
         top_k: {
           type: "number",
-          description: "Number of results to include (default: 10)",
+          description: "Number of results to include in the export (default: 10).",
         },
       },
       required: ["file_path", "query"],
