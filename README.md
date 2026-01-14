@@ -410,6 +410,49 @@ Set the log level via environment variable:
 export MEMVID_LOG_LEVEL=DEBUG  # DEBUG, INFO, WARNING, ERROR
 ```
 
+## Security Considerations
+
+### File System Access
+
+By default, the Memvid MCP server can access any file that the Node.js process has permissions to read or write. This is necessary for the server to function, but it's important to understand the security implications.
+
+### Restricting File Access
+
+To limit which directories the server can access, you can use the `MEMVID_ALLOWED_DIRS` environment variable. When set, the server will only allow operations on files within the specified directories.
+
+**Configuration:**
+
+```bash
+# Single directory
+export MEMVID_ALLOWED_DIRS="/home/user/memories"
+
+# Multiple directories (colon-separated)
+export MEMVID_ALLOWED_DIRS="/home/user/memories:/tmp/memvid:/var/data/memvid"
+```
+
+**Example in Claude Desktop config:**
+
+```json
+{
+  "mcpServers": {
+    "memvid": {
+      "command": "node",
+      "args": ["/path/to/memvid-agent-mcp/dist/index.js"],
+      "env": {
+        "MEMVID_LOG_LEVEL": "INFO",
+        "MEMVID_ALLOWED_DIRS": "/home/user/memories:/tmp/memvid"
+      }
+    }
+  }
+}
+```
+
+**Important Notes:**
+- If `MEMVID_ALLOWED_DIRS` is not set, the server can access any file the process has permissions for
+- Paths are resolved to absolute paths before validation
+- Tilde (`~`) expansion is supported and resolved before path validation
+- Access attempts outside allowed directories will result in an "Access denied" error
+
 ## Tips & Best Practices
 
 ### Use Cases
